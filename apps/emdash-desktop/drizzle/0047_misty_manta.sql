@@ -1,0 +1,1 @@
+ALTER TABLE `tasks` ADD `pending_delete_at` integer;

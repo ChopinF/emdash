@@ -21,6 +21,9 @@ vi.mock('@renderer/lib/keybindings', () => ({
   BrowserShortcutForwarding: () => null,
   KeybindingDispatcherMount: () => null,
 }));
+vi.mock('@renderer/lib/keybindings/mainmod-overlay', () => ({
+  MainmodOverlay: () => null,
+}));
 vi.mock('@renderer/lib/layout/workspace-layout', () => ({
   WorkspaceLayout: ({ mainContent }: { mainContent: ReactNode }) => mainContent,
   WorkspaceContentLayout: ({

@@ -354,6 +354,24 @@ export class AcpChatStore {
     void this._runBootstrap(options.mode);
   }
 
+  /**
+   * Re-bootstraps the live session in resume mode after its agent process was terminated
+   * (mainmod "refresh"). Mirrors the bootstrap branch of `retry`, without its error-state guards.
+   */
+  restart(): void {
+    if (this._disposed) return;
+    if (this.hostAccess?.liveAction.kind === 'disabled') {
+      void this.hostAccess.recover();
+      return;
+    }
+    this._historyRefreshRequested = false;
+    void this._attachmentRecovery?.dispose();
+    this._attachmentRecovery = null;
+    this.historyLoading = true;
+    this.loadError = null;
+    void this._runBootstrap('resume');
+  }
+
   bindView(view: ChatView | null): void {
     this._view = view;
   }

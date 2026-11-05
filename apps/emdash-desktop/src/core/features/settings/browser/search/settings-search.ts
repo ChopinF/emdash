@@ -317,6 +317,13 @@ export const SETTINGS_SEARCH_INDEX: SettingsSearchEntry[] = [
     description: 'Hide the on-screen context trigger.',
   },
   {
+    id: 'mainmod',
+    label: 'Mainmod (Left ⌘)',
+    tab: 'interface',
+    description: 'Hold Left ⌘ and press a key to navigate tasks, restart agents and more.',
+    keywords: ['hyprland', 'vim', 'leader', 'modifier', 'keyboard', 'left command'],
+  },
+  {
     id: 'keyboard-shortcuts',
     label: 'Keyboard shortcuts',
     tab: 'interface',

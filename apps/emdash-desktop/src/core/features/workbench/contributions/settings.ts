@@ -3,6 +3,7 @@ import { COMMAND_CATALOG } from '@core/manifests/shared/command-catalog';
 import type {
   InterfaceSettings,
   KeyboardSettings,
+  MainmodSettings,
   OpenInSettings,
   Theme,
 } from '@core/primitives/app-settings/api';
@@ -22,6 +23,10 @@ const keyboardSettingsSchema = z
     )
   )
   .default({});
+
+const mainmodSettingsSchema = z.object({
+  key: z.enum(['leftMeta', 'off']),
+});
 
 const interfaceSettingsSchema = z.object({
   showTrayIcon: z.boolean(),
@@ -47,6 +52,12 @@ export const keyboardSettingsContribution = defineSettingsContribution<
   key: 'keyboard',
   schema: keyboardSettingsSchema,
   defaults: {},
+});
+
+export const mainmodSettingsContribution = defineSettingsContribution<'mainmod', MainmodSettings>({
+  key: 'mainmod',
+  schema: mainmodSettingsSchema,
+  defaults: { key: 'leftMeta' },
 });
 
 export const interfaceSettingsContribution = defineSettingsContribution<

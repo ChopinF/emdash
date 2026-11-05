@@ -78,6 +78,13 @@ export type BrowserSettings = {
 
 export type KeyboardSettings = Record<string, string | null | undefined>;
 
+/** Physical key that acts as the Hyprland-style "mainmod" layer modifier. */
+export type MainmodKey = 'leftMeta' | 'off';
+
+export type MainmodSettings = {
+  key: MainmodKey;
+};
+
 export type OpenInSettings = {
   default: OpenInAppId;
   hidden: OpenInAppId[];

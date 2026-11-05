@@ -2,6 +2,9 @@ import { toast } from '@emdash/ui/react/primitives';
 import { useLayoutEffect, type ReactNode } from 'react';
 import { browserControlsRegistry } from '@core/features/browser/api/browser/browser-controls-registry';
 import type { BrowserTabResource } from '@core/features/browser/api/browser/browser-tab-resource';
+import { activeConversationIdForTask } from '@core/features/conversations/api/browser/active-conversation';
+import { getConversationsForTask } from '@core/features/conversations/api/browser/conversation-selectors';
+import { restartConversationSession } from '@core/features/conversations/api/browser/restart-conversation';
 import {
   runGitFetch,
   runGitPublishCurrentBranch,
@@ -10,11 +13,13 @@ import {
 } from '@core/features/source-control/api/browser/git-action-handlers';
 import { getGitRepositoryStore } from '@core/features/source-control/api/browser/stores/source-control-selectors';
 import { getTaskGitCheckoutStore } from '@core/features/source-control/api/browser/stores/task-source-control-selectors';
+import { scheduleTaskDelete } from '@core/features/tasks/api/browser/pending-task-deletion';
 import {
   getRegisteredTaskData,
   getTaskManagerStore,
   getTaskStore,
 } from '@core/features/tasks/api/browser/task-state/task-selectors';
+import { stepTaskEntry } from '@core/features/tasks/browser/step-task-entry';
 import { taskViewScope } from '@core/features/tasks/contributions/scopes';
 import { taskViewDef } from '@core/features/tasks/contributions/views';
 import { getTaskComposition } from '@core/features/workbench/api/browser/task-composition-selectors';
@@ -317,6 +322,26 @@ const taskScopeImplementation = {
         .catch(() => toast.error('Could not archive task'));
     },
   }),
+  'task.scheduleDelete': (params) => ({
+    availability: () =>
+      taskAvailability(
+        params,
+        () => {
+          const data = getRegisteredTaskData(params.projectId, params.taskId);
+          return Boolean(data && !data.archivedAt);
+        },
+        'Task is archived'
+      ),
+    execute: () => {
+      // Like closing a window in a tiling WM: focus moves to the neighbouring task.
+      const entries = getSidebarStore().navigableTaskEntries;
+      const neighbor = stepTaskEntry(entries, params, 1) ?? stepTaskEntry(entries, params, -1);
+      if (neighbor) getNavigation().navigate(taskViewDef(neighbor));
+      void scheduleTaskDelete(params.projectId, params.taskId).catch(() =>
+        toast.error('Could not delete task')
+      );
+    },
+  }),
   'task.convertAutomation': (params) => ({
     availability: () => {
       if (getTaskStore(params.projectId, params.taskId)?.state !== 'provisioned') return hidden;
@@ -328,25 +353,35 @@ const taskScopeImplementation = {
       void getTaskStore(params.projectId, params.taskId)?.convertAutomationTask();
     },
   }),
+  'task.refreshConversation': (params) => ({
+    availability: () =>
+      taskAvailability(
+        params,
+        () => activeConversationIdForTask(params.projectId, params.taskId) !== undefined,
+        'No active chat to restart'
+      ),
+    execute: () => {
+      const conversationId = activeConversationIdForTask(params.projectId, params.taskId);
+      if (!conversationId) return;
+      const title =
+        getConversationsForTask(params.taskId)?.conversations.get(conversationId)?.data.title ??
+        'agent';
+      void restartConversationSession(params.projectId, params.taskId, conversationId)
+        .then(() =>
+          toast.success(`Restarted ${title}`, { description: 'Resumed the same session' })
+        )
+        .catch(() => toast.error(`Could not restart ${title}`));
+    },
+  }),
   'task.nextTask': (params) => ({
     availability: () =>
       taskAvailability(
         params,
-        () => {
-          const entries = getSidebarStore().visibleTaskEntries;
-          const index = entries.findIndex(
-            (entry) => entry.projectId === params.projectId && entry.taskId === params.taskId
-          );
-          return index !== -1 && index < entries.length - 1;
-        },
+        () => stepTaskEntry(getSidebarStore().navigableTaskEntries, params, 1) !== undefined,
         'No next task'
       ),
-    execute: () => {
-      const entries = getSidebarStore().visibleTaskEntries;
-      const index = entries.findIndex(
-        (entry) => entry.projectId === params.projectId && entry.taskId === params.taskId
-      );
-      const next = entries[index + 1];
+    execute: (input) => {
+      const next = stepTaskEntry(getSidebarStore().navigableTaskEntries, params, input?.count ?? 1);
       if (next) getNavigation().navigate(taskViewDef(next));
     },
   }),
@@ -354,22 +389,15 @@ const taskScopeImplementation = {
     availability: () =>
       taskAvailability(
         params,
-        () => {
-          const entries = getSidebarStore().visibleTaskEntries;
-          return (
-            entries.findIndex(
-              (entry) => entry.projectId === params.projectId && entry.taskId === params.taskId
-            ) > 0
-          );
-        },
+        () => stepTaskEntry(getSidebarStore().navigableTaskEntries, params, -1) !== undefined,
         'No previous task'
       ),
-    execute: () => {
-      const entries = getSidebarStore().visibleTaskEntries;
-      const index = entries.findIndex(
-        (entry) => entry.projectId === params.projectId && entry.taskId === params.taskId
+    execute: (input) => {
+      const previous = stepTaskEntry(
+        getSidebarStore().navigableTaskEntries,
+        params,
+        -(input?.count ?? 1)
       );
-      const previous = entries[index - 1];
       if (previous) getNavigation().navigate(taskViewDef(previous));
     },
   }),

@@ -90,6 +90,7 @@ describe('SettingsStore contributions', () => {
         setTrayVisible,
         setTheme: vi.fn(),
         setKeyboardSettings: vi.fn(),
+        setMainmodSettings: vi.fn(),
         setBrowserSettings: vi.fn(),
       })
     );

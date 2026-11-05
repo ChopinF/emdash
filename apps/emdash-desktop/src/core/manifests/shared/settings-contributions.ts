@@ -15,6 +15,7 @@ import { terminalSettingsContribution } from '@core/features/terminals/contribut
 import {
   interfaceSettingsContribution,
   keyboardSettingsContribution,
+  mainmodSettingsContribution,
   openInSettingsContribution,
   themeSettingsContribution,
 } from '@core/features/workbench/contributions/settings';
@@ -37,6 +38,7 @@ export const appSettingsSchemaContributions = {
   defaultAgent: defaultAgentSettingsContribution,
   preferredConversationType: preferredConversationTypeSettingsContribution,
   keyboard: keyboardSettingsContribution,
+  mainmod: mainmodSettingsContribution,
   notifications: notificationSettingsContribution,
   theme: themeSettingsContribution,
   openIn: openInSettingsContribution,

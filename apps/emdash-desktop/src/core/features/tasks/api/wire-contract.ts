@@ -117,6 +117,11 @@ export const tasksWireContract = defineContract({
         data: z.void(),
         error: z.never(),
       }),
+      scheduleDelete: mutation({
+        input: taskIdInputSchema.extend({ deleteAt: z.number().int().positive() }),
+        data: z.void(),
+        error: z.never(),
+      }),
     },
   }),
   taskStats: liveModel({

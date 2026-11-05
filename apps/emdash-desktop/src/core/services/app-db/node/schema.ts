@@ -178,6 +178,9 @@ export const tasks = sqliteTable(
     type: text('type').notNull().default('task'), // 'task' | 'automation-run'
     automationRunId: text('automation_run_id'), // set when type = 'automation-run'; runtime-owned reference, intentionally no FK
     deletedAt: text('deleted_at'),
+    // Epoch ms deadline of a scheduled (undoable) delete; the task is archived meanwhile and a
+    // main-process sweep performs the real deletion once it passes. Null = not scheduled.
+    pendingDeleteAt: integer('pending_delete_at'),
   },
   (table) => ({
     projectIdIdx: index('idx_tasks_project_id').on(table.projectId),

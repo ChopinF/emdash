@@ -25,6 +25,7 @@ export function mapTaskRowToTask(
     status: row.status as TaskLifecycleStatus,
     linkedIssue: row.linkedIssue ?? undefined,
     archivedAt: row.archivedAt ?? undefined,
+    pendingDeleteAt: row.pendingDeleteAt ?? undefined,
     lastInteractedAt: row.lastInteractedAt ?? undefined,
     createdAt: row.createdAt,
     prs,

@@ -7,6 +7,7 @@ import {
 } from '@core/primitives/navigation/browser/navigation-hooks';
 import { useTheme } from '@core/primitives/theme/browser';
 import { BrowserShortcutForwarding, KeybindingDispatcherMount } from '@renderer/lib/keybindings';
+import { MainmodOverlay } from '@renderer/lib/keybindings/mainmod-overlay';
 import { WorkspaceContentLayout, WorkspaceLayout } from '@renderer/lib/layout/workspace-layout';
 
 export function Workspace() {
@@ -26,6 +27,7 @@ export function Workspace() {
           </WrapView>
         }
       />
+      <MainmodOverlay />
       <Toaster />
     </WindowScope>
   );

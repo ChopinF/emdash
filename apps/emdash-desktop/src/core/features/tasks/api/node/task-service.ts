@@ -68,6 +68,7 @@ import { getDeletePreflight } from '../../node/operations/getDeletePreflight';
 import { getTasks } from '../../node/operations/getTasks';
 import { renameTask } from '../../node/operations/renameTask';
 import { restoreTask } from '../../node/operations/restoreTask';
+import { setTaskPendingDeleteAt } from '../../node/operations/scheduleTaskDeletion';
 import { setTaskPinned } from '../../node/operations/setTaskPinned';
 import { updateLinkedIssue } from '../../node/operations/updateLinkedIssue';
 import { updateTaskStatus } from '../../node/operations/updateTaskStatus';
@@ -591,6 +592,21 @@ export class TaskService implements Hookable<TaskLifecycleHooks> {
       telemetry
     );
     this._hooks.callHookBackground('task:archived', taskId, projectId);
+  }
+
+  /**
+   * Schedules an undoable delete: records the deadline, then archives the task (stops agents, keeps
+   * the worktree and session ids). Restoring the task before the deadline cancels the delete.
+   */
+  async scheduleTaskDeletion(
+    projectId: string,
+    taskId: string,
+    deleteAt: number,
+    telemetry: Pick<TelemetryService, 'capture'>
+  ): Promise<void> {
+    const scheduled = await setTaskPendingDeleteAt(this.dependencies.db, taskId, deleteAt);
+    if (!scheduled) return;
+    await this.archiveTask(projectId, taskId, telemetry);
   }
 
   async restoreTask(id: string): Promise<void> {

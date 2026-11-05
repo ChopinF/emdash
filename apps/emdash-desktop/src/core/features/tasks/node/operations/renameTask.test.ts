@@ -20,6 +20,7 @@ function makeTaskRow(values: Partial<TaskRow>): TaskRow {
     linkedIssue: values.linkedIssue ?? null,
     archivedAt: values.archivedAt ?? null,
     deletedAt: values.deletedAt ?? null,
+    pendingDeleteAt: values.pendingDeleteAt ?? null,
     createdAt: values.createdAt ?? '2026-05-28 12:00:00',
     updatedAt: values.updatedAt ?? '2026-05-28 12:00:00',
     lastInteractedAt: values.lastInteractedAt ?? null,

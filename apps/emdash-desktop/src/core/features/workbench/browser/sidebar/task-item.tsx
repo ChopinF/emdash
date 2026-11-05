@@ -15,7 +15,9 @@ import { TaskGitDiffStats } from '@core/features/tasks/contributions/browser/tas
 import { taskViewDef } from '@core/features/tasks/contributions/views';
 import { getTaskWorkspace } from '@core/features/workbench/api/browser/task-composition-selectors';
 import { TaskSidebarTrailingSlot } from '@core/features/workbench/browser/sidebar/task-sidebar-agent-status';
+import { getSidebarStore } from '@core/features/workbench/contributions/browser/app-stores';
 import { useOpenModal } from '@core/manifests/browser/modal-api';
+import { mainmodState } from '@core/primitives/keybindings/browser/mainmod/mainmod-state';
 import {
   useNavigate,
   useViewParams,
@@ -109,13 +111,18 @@ export const SidebarTaskItem = observer(function SidebarTaskItem({
     >
       <SidebarMenuRow
         className={cn(
-          'group/row flex items-center justify-between px-1 py-1.5 h-8 gap-1',
+          'group/row relative flex items-center justify-between px-1 py-1.5 h-8 gap-1',
           rowVariant === 'pinned' ? 'pl-2' : 'pl-8'
         )}
         isActive={isActive}
         onMouseDown={(e) => e.preventDefault()}
         onClick={openTask}
       >
+        <RelativeTaskNumber
+          taskId={taskId}
+          currentTaskId={currentView === 'task' ? params?.taskId : undefined}
+          inline={rowVariant === 'pinned'}
+        />
         <SidebarMenuAction
           aria-label={`Open task ${taskName || 'task'}`}
           className="gap-1 overflow-hidden"
@@ -136,6 +143,35 @@ export const SidebarTaskItem = observer(function SidebarTaskItem({
         </div>
       </SidebarMenuRow>
     </TaskContextMenu>
+  );
+});
+
+/**
+ * Vim `relativenumber`-style distance from the current task, shown once the mainmod key has been
+ * held briefly or a count is typed, so `mainmod + <count> j/k` targets are visible.
+ */
+const RelativeTaskNumber = observer(function RelativeTaskNumber({
+  taskId,
+  currentTaskId,
+  inline,
+}: {
+  taskId: string;
+  currentTaskId: string | undefined;
+  inline: boolean;
+}) {
+  if (!mainmodState.showTaskNumbers) return null;
+  const offset = getSidebarStore().relativeOffsetOf(taskId, currentTaskId);
+  if (offset === null || offset === 0) return null;
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'pointer-events-none shrink-0 font-mono text-[10px] tabular-nums text-foreground/45',
+        inline ? 'mr-1' : 'absolute left-1 w-6 text-right'
+      )}
+    >
+      {Math.abs(offset)}
+    </span>
   );
 });
 

@@ -91,6 +91,7 @@ import { TaskService } from '@core/features/tasks/api/node/task-service';
 import type { TaskSessionCleanup } from '@core/features/tasks/api/node/task-session-cleanup';
 import { TaskSessionLaunchContextResolver } from '@core/features/tasks/api/node/task-session-launch-context';
 import { TaskSessionManager } from '@core/features/tasks/api/node/task-session-manager';
+import { sweepPendingTaskDeletions } from '@core/features/tasks/node/operations/sweepPendingTaskDeletions';
 import { installAutomationTelemetry } from '@core/features/telemetry/node/automation-telemetry';
 import { installTaskTelemetry } from '@core/features/telemetry/node/task-telemetry';
 import { createUsageOverview } from '@core/features/usage/node/usage-overview';
@@ -157,6 +158,7 @@ import { createDesktopWorkspaceRuntimeAcquirer } from '@main/gateway/workspace-r
 import { setBrowserCorsRelaxationSettings } from '@main/host/browser/browser-profile-session';
 import { browserWebContentsRegistry } from '@main/host/browser/browser-webcontents-registry';
 import { HostAttachmentRegistry } from '@main/host/host-attachment-registry';
+import { setMainmodSettings } from '@main/host/mainmod-menu-guard';
 import { createSystemNotificationSink } from '@main/host/notifications/system-notification-sink';
 import { encryptedAppSecretsStore } from '@main/host/secrets/encrypted-app-secrets-store';
 import { toPlaintextSecretStore } from '@main/host/secrets/plaintext-secret-store';
@@ -706,6 +708,7 @@ export async function bootServices(
   await step('services:notifications-init', () => notificationService.initialize());
   installUpdateNotifications(notificationService);
   browserWebContentsRegistry.setKeyboardSettings(await appSettingsService.get('keyboard'));
+  setMainmodSettings(await appSettingsService.get('mainmod'));
   setBrowserCorsRelaxationSettings(await appSettingsService.get('browser'));
   await step('services:prompt-library-init', () => promptLibraryService.initialize());
   // Plain project deletion (spec §3): the cascade reuses the task session cleanup and
@@ -853,6 +856,34 @@ export async function bootServices(
   });
   void sessionHygieneSweep.runNow().catch((error) => {
     log.warn('session hygiene sweep failed', { error: String(error) });
+  });
+  // Mainmod `d d` schedules an undoable delete (task archived + deadline). Once the deadline
+  // passes, this performs the real deletion; overdue deletions run at boot too.
+  const pendingTaskDeletionSweep = startPeriodicSweep({
+    scope: appScope,
+    intervalMs: 60 * 1000,
+    run: async () => {
+      const result = await sweepPendingTaskDeletions({
+        db,
+        now: () => Date.now(),
+        isProjectAttached: (projectId) => projectManager.requireAttached(projectId).success,
+        deleteTask: (projectId, taskId, options) =>
+          taskService.deleteTask(projectId, taskId, options),
+        deleteBranch: async () => (await appSettingsService.get('tasks')).deleteBranchByDefault,
+        onTaskError: (taskId, error) => {
+          log.warn('pending task deletion failed', { taskId, error: String(error) });
+        },
+      });
+      if (result.deleted.length > 0) {
+        log.info('pending task deletions completed', { taskIds: result.deleted });
+      }
+    },
+    onError: (error) => {
+      log.warn('pending task deletion sweep failed', { error: String(error) });
+    },
+  });
+  void pendingTaskDeletionSweep.runNow().catch((error) => {
+    log.warn('pending task deletion sweep failed', { error: String(error) });
   });
   return {
     account: accountService,

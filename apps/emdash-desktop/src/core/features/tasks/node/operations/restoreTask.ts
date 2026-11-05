@@ -10,6 +10,8 @@ export async function restoreTask(db: AppDb, id: string): Promise<Task | undefin
     .update(tasks)
     .set({
       archivedAt: null,
+      // Restoring a task cancels any scheduled (undoable) delete.
+      pendingDeleteAt: null,
       updatedAt: sql`CURRENT_TIMESTAMP`,
     })
     .where(eq(tasks.id, id))

@@ -137,6 +137,19 @@ export function createTasksWireController(options: {
           );
           return ok<void>();
         },
+        async scheduleDelete(context) {
+          await options.service.scheduleTaskDeletion(
+            context.key.projectId,
+            context.input.taskId,
+            context.input.deleteAt,
+            options.telemetry
+          );
+          await context.observed(
+            'list',
+            taskListFamily(context.key).refresh({ mutationIds: [context.mutationId] })
+          );
+          return ok<void>();
+        },
       },
     }
   );

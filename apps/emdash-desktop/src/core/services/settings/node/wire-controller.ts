@@ -4,6 +4,7 @@ import type { AppSettingsService } from './app-settings-service';
 
 export type SettingsRuntimePort = {
   setKeyboardSettings(settings: AppSettings['keyboard']): void;
+  setMainmodSettings(settings: AppSettings['mainmod']): void;
   setBrowserSettings(settings: AppSettings['browser']): void;
   setTheme(theme: AppSettings['theme']): void;
   setTrayVisible(visible: boolean): void;
@@ -19,6 +20,9 @@ async function reconcileSettingsRuntimeState(
   }
   if (key === 'keyboard') {
     runtime.setKeyboardSettings(await service.get('keyboard'));
+  }
+  if (key === 'mainmod') {
+    runtime.setMainmodSettings(await service.get('mainmod'));
   }
   if (key === 'browser') {
     runtime.setBrowserSettings(await service.get('browser'));

@@ -69,6 +69,22 @@ certificates held by the agent, with credentials stored in your OS keychain.
 
 See [Remote Projects](https://emdash.sh/docs/remote-projects) for setup details.
 
+## Mainmod Keybindings
+
+Hold Left ⌘ and press a key. Right ⌘ keeps the usual ⌘ shortcuts. You can turn this off in
+Settings > Interface.
+
+| Key | Action |
+| --- | --- |
+| `j` or `↓` | Next task (`3` `j` moves three) |
+| `k` or `↑` | Previous task |
+| `n` | New task |
+| `t` | New conversation |
+| `r` | Restart the agent on the same session |
+| `d` `d` | Delete the task in 1 hour, including uncommitted changes |
+| `u` | Undo the latest delete |
+| `m` | Show MCP servers |
+
 ## Privacy
 
 Emdash is local-first. App state is stored in a local SQLite database, and Emdash does
