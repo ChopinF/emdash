@@ -71,42 +71,19 @@ See [Remote Projects](https://emdash.sh/docs/remote-projects) for setup details.
 
 ## Mainmod Keybindings
 
-Mainmod is a keyboard layer for moving between tasks and acting on them without the mouse. Hold
-Left ⌘, the key directly left of the space bar on a Mac, and press a key. Hold it briefly to see the
-keys on screen, with task distances shown in the sidebar. You can turn it off in
+Hold Left ⌘ and press a key. Right ⌘ keeps the usual ⌘ shortcuts. You can turn this off in
 Settings > Interface.
 
-| Hold Left ⌘ and press | Action |
+| Key | Action |
 | --- | --- |
-| `j` or `↓` | Next task |
+| `j` or `↓` | Next task (`3` `j` moves three) |
 | `k` or `↑` | Previous task |
-| `1`–`9`, then `j` or `k` | Move that many tasks, for example `3` `j` |
 | `n` | New task |
 | `t` | New conversation |
-| `r` | Restart the active agent on the same session |
-| `d` `d` | Stop the task now and delete it after 1 hour |
-| `u` | Undo the latest scheduled delete |
+| `r` | Restart the agent on the same session |
+| `d` `d` | Delete the task in 1 hour, including uncommitted changes |
+| `u` | Undo the latest delete |
 | `m` | Show MCP servers |
-
-`d` `d` shows an Undo toast and lists the task under "Deleting soon" in the sidebar until the hour
-is up. The delete then removes the task's worktree and chats, including any uncommitted changes.
-Its branch is removed only if deleting branches by default is turned on in settings.
-
-Those keys replace their usual ⌘ shortcuts on Left ⌘. Right ⌘ never enters the layer, so these
-shortcuts stay available there:
-
-| Right ⌘ shortcut | Action |
-| --- | --- |
-| `⌘K` | Command palette |
-| `⌘J` | Terminal drawer |
-| `⌘D` | New conversation in a right split |
-| `⌘R` | Reload the app |
-| `⌘M` | Minimize the window |
-| `⌘1`–`⌘9` | Open tab 1–9 |
-| `⌘↑` or `⌘↓` | Jump to the top or bottom in text fields and editors |
-
-Every other ⌘ shortcut works as normal on either key, including anything combined with Shift, ⌥,
-or ⌃.
 
 ## Privacy
 
