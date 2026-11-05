@@ -133,6 +133,53 @@ export class SidebarStore {
       .map(({ projectId, taskId }) => ({ projectId, taskId }));
   }
 
+  /**
+   * Every task the sidebar shows, in visual top-to-bottom order: the pinned strip first, then the
+   * project tree. Next/Previous Task and the mainmod relative numbers walk this list.
+   */
+  get navigableTaskEntries(): { projectId: string; taskId: string }[] {
+    return [...this.pinnedSidebarEntries, ...this.visibleTaskEntries];
+  }
+
+  /** Index of each task in `navigableTaskEntries`, keyed by task id. */
+  get navigableIndexByTaskId(): ReadonlyMap<string, number> {
+    return new Map(this.navigableTaskEntries.map((entry, index) => [entry.taskId, index]));
+  }
+
+  /** Distance of `taskId` from `currentTaskId` in navigation order (negative = above). */
+  relativeOffsetOf(taskId: string, currentTaskId: string | undefined): number | null {
+    if (!currentTaskId) return null;
+    const index = this.navigableIndexByTaskId.get(taskId);
+    const currentIndex = this.navigableIndexByTaskId.get(currentTaskId);
+    if (index === undefined || currentIndex === undefined) return null;
+    return index - currentIndex;
+  }
+
+  /** Tasks scheduled for deletion (mainmod `d d`), soonest deadline first. */
+  get pendingDeletionEntries(): {
+    projectId: string;
+    taskId: string;
+    name: string;
+    deleteAt: number;
+  }[] {
+    const entries: { projectId: string; taskId: string; name: string; deleteAt: number }[] = [];
+    for (const project of this.projectManager.projects.values()) {
+      const context = asAvailableProject(project);
+      if (!context) continue;
+      for (const task of context.get(taskManagerStoreToken).tasks.values()) {
+        const data = registeredTaskData(task);
+        if (data?.pendingDeleteAt == null) continue;
+        entries.push({
+          projectId: project.id,
+          taskId: data.id,
+          name: data.name,
+          deleteAt: data.pendingDeleteAt,
+        });
+      }
+    }
+    return entries.sort((a, b) => a.deleteAt - b.deleteAt);
+  }
+
   /** Flat list of pinned tasks from available Project contexts, in project-tree sort order. */
   get pinnedSidebarEntries(): { projectId: string; taskId: string }[] {
     const pairs: { projectId: string; task: TaskStore }[] = [];

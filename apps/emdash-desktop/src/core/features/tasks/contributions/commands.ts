@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { defineCommand } from '@core/primitives/commands/api';
 import { keybinding } from '@core/primitives/keybindings/api';
 
@@ -8,6 +9,14 @@ export const newConversationCommand = defineCommand({
   category: 'Conversations',
   icon: 'message-square-plus',
   keybinding: keybinding.settings('newConversation', 'Mod+T'),
+});
+
+export const refreshConversationCommand = defineCommand({
+  id: 'task.refreshConversation',
+  title: 'Restart Agent (Resume)',
+  description: 'Stop the agent in the active chat and start it again on the same session',
+  category: 'Conversations',
+  icon: 'rotate-ccw',
 });
 
 export const newConversationSplitRightCommand = defineCommand({
@@ -193,6 +202,22 @@ export const archiveTaskCommand = defineCommand({
   }),
 });
 
+export const scheduleDeleteTaskCommand = defineCommand({
+  id: 'task.scheduleDelete',
+  title: 'Delete Task in 1 Hour',
+  description: 'Stop the task now and delete its worktree, branch and chats in 1 hour (undoable)',
+  category: 'Task',
+  icon: 'timer',
+});
+
+export const undoDeleteTaskCommand = defineCommand({
+  id: 'task.undoDelete',
+  title: 'Undo Pending Task Delete',
+  description: 'Restore the most recently scheduled task deletion and resume its chat',
+  category: 'Task',
+  icon: 'undo-2',
+});
+
 export const convertAutomationCommand = defineCommand({
   id: 'task.convertAutomation',
   title: 'Convert to Regular Task',
@@ -201,12 +226,16 @@ export const convertAutomationCommand = defineCommand({
   icon: 'message-square',
 });
 
+/** Optional vim-style count: move this many tasks instead of one. */
+const taskStepInputSchema = z.object({ count: z.number().int().min(1).max(999) }).optional();
+
 export const nextTaskCommand = defineCommand({
   id: 'task.nextTask',
   title: 'Next Task',
   description: 'Switch to the next task',
   category: 'Navigation',
   icon: 'chevron-down',
+  input: taskStepInputSchema,
   keybinding: keybinding.settings('taskNext', 'Mod+Alt+ArrowDown', {
     ignoreWhenEditorFocused: true,
   }),
@@ -218,6 +247,7 @@ export const previousTaskCommand = defineCommand({
   description: 'Switch to the previous task',
   category: 'Navigation',
   icon: 'chevron-up',
+  input: taskStepInputSchema,
   keybinding: keybinding.settings('taskPrev', 'Mod+Alt+ArrowUp', {
     ignoreWhenEditorFocused: true,
   }),
@@ -236,6 +266,7 @@ export const deleteSelectedTasksCommand = defineCommand({
 export const TASK_COMMAND_DEFS = [
   newConversationCommand,
   newConversationSplitRightCommand,
+  refreshConversationCommand,
   sidebarChangesCommand,
   sidebarConversationsCommand,
   sidebarFilesCommand,
@@ -256,9 +287,13 @@ export const TASK_COMMAND_DEFS = [
   gitPushCommand,
   pinTaskCommand,
   archiveTaskCommand,
+  scheduleDeleteTaskCommand,
   convertAutomationCommand,
   nextTaskCommand,
   previousTaskCommand,
 ] as const;
 
 export const TASK_LIST_COMMAND_DEFS = [deleteSelectedTasksCommand] as const;
+
+/** Task commands that work from any view, so they live on the window scope. */
+export const TASK_WINDOW_COMMAND_DEFS = [undoDeleteTaskCommand] as const;

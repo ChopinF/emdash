@@ -18,17 +18,21 @@ import {
   newTerminalCommand,
   openBrowserCommand,
   pinTaskCommand,
+  refreshConversationCommand,
+  scheduleDeleteTaskCommand,
   sidebarChangesCommand,
   sidebarConversationsCommand,
   sidebarFilesCommand,
   toggleRightSidebarCommand,
   toggleTerminalDrawerCommand,
+  undoDeleteTaskCommand,
   viewTerminalsCommand,
 } from './commands';
 
 export const TASK_COMMAND_PALETTE_ITEMS = [
   defineCommandPaletteItem({ command: newConversationCommand }),
   defineCommandPaletteItem({ command: newConversationSplitRightCommand }),
+  defineCommandPaletteItem({ command: refreshConversationCommand }),
   defineCommandPaletteItem({ command: sidebarChangesCommand }),
   defineCommandPaletteItem({ command: sidebarConversationsCommand }),
   defineCommandPaletteItem({ command: sidebarFilesCommand }),
@@ -49,6 +53,8 @@ export const TASK_COMMAND_PALETTE_ITEMS = [
   defineCommandPaletteItem({ command: gitPushCommand }),
   defineCommandPaletteItem({ command: pinTaskCommand }),
   defineCommandPaletteItem({ command: archiveTaskCommand }),
+  defineCommandPaletteItem({ command: scheduleDeleteTaskCommand }),
+  defineCommandPaletteItem({ command: undoDeleteTaskCommand }),
   defineCommandPaletteItem({ command: convertAutomationCommand }),
   defineCommandPaletteItem({ command: deleteSelectedTasksCommand }),
 ] as const;

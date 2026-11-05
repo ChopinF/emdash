@@ -16,6 +16,7 @@ import { browserWebContentsRegistry } from '@main/host/browser/browser-webconten
 import { browserOperations } from '@main/host/browser/controller';
 import { createDevPerfOperations } from '@main/host/dev-perf/controller-operations';
 import { writeRendererLogEntry } from '@main/host/file-logger';
+import { setMainmodSettings } from '@main/host/mainmod-menu-guard';
 import { setTrayVisible } from '@main/host/tray';
 import { updateOperations } from '@main/host/updates/controller-operations';
 import { applyNativeTheme } from '@main/host/window';
@@ -121,6 +122,7 @@ export function createDesktopWireOptions(
     },
     settingsRuntime: {
       setKeyboardSettings: (settings) => browserWebContentsRegistry.setKeyboardSettings(settings),
+      setMainmodSettings,
       setBrowserSettings: setBrowserCorsRelaxationSettings,
       setTheme: applyNativeTheme,
       setTrayVisible,

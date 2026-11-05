@@ -1,14 +1,17 @@
 import { toast } from '@emdash/ui/react/primitives';
 import { useLayoutEffect, type ReactNode } from 'react';
+import { activeConversationProviderIdForTask } from '@core/features/conversations/api/browser/active-conversation';
 import { captureDevPerfTrace } from '@core/features/dev-perf/api/browser/capture-trace';
 import { projectViewDef } from '@core/features/projects/contributions/views';
 import { toggleAppTheme } from '@core/features/settings/api/browser/theme-toggle';
+import { cancelScheduledTaskDelete } from '@core/features/tasks/api/browser/pending-task-deletion';
 import {
   getRegisteredTaskData,
   taskHostActionAvailability,
 } from '@core/features/tasks/api/browser/task-state/task-selectors';
 import { taskViewDef } from '@core/features/tasks/contributions/views';
 import { applyHistoryEntry } from '@core/features/workbench/browser/nav-buttons';
+import { getSidebarStore } from '@core/features/workbench/contributions/browser/app-stores';
 import { useWorkspaceLayoutContext } from '@core/features/workbench/contributions/browser/layout-provider';
 import { openModal } from '@core/manifests/browser/modal-api';
 import { projectAvailabilityUi } from '@core/manifests/browser/project-availability-ui';
@@ -63,6 +66,30 @@ export function WindowScope({ children }: { readonly children: ReactNode }) {
         if (projectId && taskHostActionAvailability(projectId).kind === 'enabled') {
           void openModal('taskModal', { projectId });
         }
+      },
+    }),
+    'task.undoDelete': () => ({
+      availability: () =>
+        getSidebarStore().pendingDeletionEntries.length > 0
+          ? enabled
+          : disabled('No task is scheduled for deletion'),
+      execute: () => {
+        const latest = getSidebarStore().pendingDeletionEntries.reduce<
+          { projectId: string; taskId: string; name: string; deleteAt: number } | undefined
+        >((best, entry) => (!best || entry.deleteAt > best.deleteAt ? entry : best), undefined);
+        if (!latest) return;
+        void cancelScheduledTaskDelete(latest.projectId, latest.taskId)
+          .then(() => toast.success(`Restored “${latest.name}”`))
+          .catch(() => toast.error(`Could not restore “${latest.name}”`));
+      },
+    }),
+    'mcp.quickList': () => ({
+      execute: () => {
+        const providerId =
+          currentProjectId && currentTaskId
+            ? activeConversationProviderIdForTask(currentProjectId, currentTaskId)
+            : undefined;
+        void openModal('mcpQuickListModal', { projectId: currentProjectId, providerId });
       },
     }),
     'app.giveFeedback': () => ({

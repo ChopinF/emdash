@@ -12,6 +12,7 @@ import {
   useWorkspaceSlots,
 } from '@core/primitives/navigation/browser/navigation-hooks';
 import { cn } from '@core/primitives/styling/browser/cn';
+import { SidebarPendingDeletionList } from './pending-deletion-list';
 import { SidebarPinnedTaskList } from './pinned-task-list';
 import { ProjectsGroupLabel } from './projects-group-label';
 import {
@@ -67,6 +68,7 @@ export const LeftSidebar: React.FC = observer(function LeftSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+          <SidebarPendingDeletionList />
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>

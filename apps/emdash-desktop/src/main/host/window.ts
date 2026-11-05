@@ -18,6 +18,7 @@ import {
   validateBrowserWebviewAttach,
 } from '@main/host/browser/webview-security';
 import { registerExternalLinkHandlers } from '@main/host/externalLinks';
+import { attachMainmodMenuGuard } from '@main/host/mainmod-menu-guard';
 import { log } from '@main/lib/logger';
 import { telemetryService } from '@main/lib/telemetry';
 import { APP_ORIGIN } from './protocol';
@@ -70,6 +71,7 @@ export function createMainWindow(): BrowserWindow {
     show: false,
   });
   watchWindow(mainWindow);
+  attachMainmodMenuGuard(mainWindow);
   mainWindow.webContents.once('did-finish-load', () => {
     log.info('boot-timeline', {
       mark: 'window-did-finish-load',

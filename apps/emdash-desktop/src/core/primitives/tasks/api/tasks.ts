@@ -58,6 +58,9 @@ export type AutomationRunMeta = {
   finishedAt: number | null;
 };
 
+/** How long a mainmod `d d` delete waits (with undo available) before it really deletes. */
+export const PENDING_DELETE_DELAY_MS = 60 * 60 * 1000;
+
 export type Task = {
   id: string;
   projectId: string;
@@ -68,6 +71,8 @@ export type Task = {
   /** ISO timestamp: when lifecycle status last changed (current status entered). */
   statusChangedAt: string;
   archivedAt?: string;
+  /** Epoch ms deadline of a scheduled (undoable) delete; set only while the task is archived. */
+  pendingDeleteAt?: number;
   lastInteractedAt?: string;
   linkedIssue?: LinkedIssue;
   isPinned: boolean;

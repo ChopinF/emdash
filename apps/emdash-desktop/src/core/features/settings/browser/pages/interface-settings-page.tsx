@@ -3,6 +3,7 @@ import FilesSettingsCard from '../components/FilesSettingsCard';
 import HiddenToolsSettingsCard from '../components/HiddenToolsSettingsCard';
 import InterfaceSettingsCard from '../components/InterfaceSettingsCard';
 import KeyboardSettingsCard from '../components/KeyboardSettingsCard';
+import MainmodSettingsCard from '../components/MainmodSettingsCard';
 import SidebarMetadataSettingsCard from '../components/SidebarMetadataSettingsCard';
 import TerminalSettingsCard from '../components/TerminalSettingsCard';
 import ThemeCard from '../components/ThemeCard';
@@ -33,6 +34,9 @@ export function InterfaceSettingsPage() {
       </SettingsSection>
       <SettingsSection bare>
         <InterfaceSettingsCard />
+      </SettingsSection>
+      <SettingsSection title="Mainmod" bare>
+        <MainmodSettingsCard />
       </SettingsSection>
       <SettingsSection title="Keyboard shortcuts" bare>
         <KeyboardSettingsCard />

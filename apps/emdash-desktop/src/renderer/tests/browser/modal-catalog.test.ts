@@ -25,6 +25,7 @@ const expectedModalIds = [
   'integrationSetupModal',
   'languageServicesDialog',
   'linkConversationModal',
+  'mcpQuickListModal',
   'projectConfigImportModal',
   'promptModal',
   'quitUnsavedChangesModal',

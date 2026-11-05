@@ -766,6 +766,41 @@ export class TaskManagerStore {
     getNavigation().invalidateSubject(taskSubject({ taskId }));
   }
 
+  /**
+   * Undoable delete (mainmod `d d`): archives the task now — agents stop, worktree and provider
+   * sessions are kept — and records `deleteAt`, after which the main process deletes it for real.
+   * `restoreTask` before the deadline cancels the deletion.
+   */
+  async scheduleDeleteTask(taskId: string, deleteAt: number): Promise<void> {
+    const currentTask = this.tasks.get(taskId);
+    if (!currentTask || !isRegistered(currentTask)) return;
+    const archivedAt = new Date().toISOString();
+    const result = await this._runTaskListMutation(
+      (member) => member.mutations.scheduleDelete,
+      { taskId, deleteAt },
+      (draft) => {
+        const target = draft.tasks.find((candidate) => candidate.id === taskId);
+        if (target) {
+          target.archivedAt = archivedAt;
+          target.pendingDeleteAt = deleteAt;
+        }
+      }
+    );
+    throwIfMutationFailed(result);
+
+    runInAction(() => {
+      const task = this.tasks.get(taskId);
+      if (task && isRegistered(task)) {
+        task.transitionToDryUnprovisioned({ ...task.data }, 'idle');
+      }
+    });
+    const current = getNavigation().currentRef;
+    if (current.viewId === 'task' && (current.params as { taskId?: string }).taskId === taskId) {
+      getNavigation().navigate(projectViewDef({ projectId: this.projectId }));
+    }
+    getNavigation().invalidateSubject(taskSubject({ taskId }));
+  }
+
   async restoreTask(taskId: string): Promise<void> {
     const task = this.tasks.get(taskId);
     if (!task || !isRegistered(task)) return;
@@ -774,7 +809,10 @@ export class TaskManagerStore {
       { taskId },
       (draft) => {
         const target = draft.tasks.find((candidate) => candidate.id === taskId);
-        if (target) target.archivedAt = undefined;
+        if (target) {
+          target.archivedAt = undefined;
+          target.pendingDeleteAt = undefined;
+        }
       }
     );
     throwIfMutationFailed(result);
