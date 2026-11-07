@@ -783,6 +783,57 @@ describe('TuiAgentsRuntime', () => {
     expectNoSessionResidue('conversation-1', leakContainers(runtime));
   });
 
+  it('publishes pull requests mentioned in agent output and saves them', async () => {
+    const intents = createMemorySessionIntentStore();
+    const { runtime, spawner } = createRuntime({ intents });
+    await runtime.startSession(startInput());
+
+    spawner.processes[0]!.emitData('Opened https://github.com/o/r/pull/7\n');
+
+    const url = 'https://github.com/o/r/pull/7';
+    const session = () =>
+      peek(runtime.sessionsLiveModel.get(undefined)!.states.list)['conversation-1'];
+    expect(session()?.pullRequestMentions).toMatchObject([{ url, number: 7 }]);
+    await vi.waitFor(() => {
+      expect(intents.snapshot()[0]?.payload).toMatchObject({
+        pullRequestMentions: [{ url, number: 7 }],
+      });
+    });
+
+    await runtime.stopSession('conversation-1');
+    await runtime.resumeSession(startInput({ sessionId: 'provider-session' }));
+    expect(session()?.pullRequestMentions).toMatchObject([{ url }]);
+  });
+
+  it('restores saved pull request mentions on reconcile', async () => {
+    const identity = 'project:task:conversation-1';
+    const name = makeLegacyTmuxSessionName(identity);
+    const url = 'https://github.com/o/r/pull/7';
+    const intents = createMemorySessionIntentStore();
+    await intents.saveActive({
+      conversationId: 'conversation-1',
+      sessionId: 'provider-session',
+      payload: {
+        ...startInput({ sessionId: 'provider-session' }),
+        tmuxSessionName: name,
+        pullRequestMentions: [
+          { url, provider: 'github', repository: 'o/r', number: 7, firstSeenAt: 1 },
+        ],
+      },
+    });
+    const exec = vi.fn(() => Promise.resolve({ stdout: `${name}\t42\t\n`, stderr: '' }));
+    const { runtime } = createRuntime({ intents, exec: { exec } });
+
+    await runtime.reconcile();
+
+    await vi.waitFor(() => {
+      expect(
+        peek(runtime.sessionsLiveModel.get(undefined)!.states.list)['conversation-1']
+          ?.pullRequestMentions
+      ).toMatchObject([{ url }]);
+    });
+  });
+
   it('aborts reconcile without suspending intents when the tmux listing fails', async () => {
     const intents = createMemorySessionIntentStore();
     await intents.saveActive({
@@ -1094,6 +1145,7 @@ type RuntimeInternals = {
   configs: Map<string, unknown>;
   generations: Map<string, unknown>;
   unexpectedRespawns: Map<string, unknown>;
+  pullRequestMentions: Map<string, unknown>;
   registry: { get(key: string): unknown };
 };
 
@@ -1107,6 +1159,7 @@ function leakContainers(runtime: TuiAgentsRuntime): LeakCheckContainer[] {
     mapContainer('configs', internals.configs),
     mapContainer('generations', internals.generations),
     mapContainer('unexpectedRespawns', internals.unexpectedRespawns),
+    mapContainer('pullRequestMentions', internals.pullRequestMentions),
     { name: 'ptyRegistry', has: (key) => internals.registry.get(key) !== undefined },
     {
       name: 'sessionsList',

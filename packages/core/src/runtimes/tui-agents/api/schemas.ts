@@ -72,6 +72,17 @@ export const tuiSessionResumeStateSchema = z.object({
 
 export type TuiSessionResumeState = z.infer<typeof tuiSessionResumeStateSchema>;
 
+export const tuiPullRequestMentionSchema = z.object({
+  url: z.string(),
+  provider: z.enum(['github', 'gitlab']),
+  /** `owner/repo`, or the full group path on GitLab. */
+  repository: z.string(),
+  number: z.number().int(),
+  firstSeenAt: z.number().int(),
+});
+
+export type TuiPullRequestMention = z.infer<typeof tuiPullRequestMentionSchema>;
+
 export const tuiSessionStateSchema = z.object({
   conversationId: z.string(),
   providerId: z.string().optional(),
@@ -89,6 +100,8 @@ export const tuiSessionStateSchema = z.object({
   startedAt: z.number().int(),
   lastInputAt: z.number().int().optional(),
   lastOutputAt: z.number().int().optional(),
+  /** Pull requests seen in the agent's output, oldest first. */
+  pullRequestMentions: z.array(tuiPullRequestMentionSchema).optional(),
   exit: z
     .object({
       exitCode: z.number().int().nullable(),
@@ -155,6 +168,7 @@ export type TuiAgentStateList = z.infer<typeof tuiAgentStateListSchema>;
 
 export const persistedTuiAgentStartInputSchema = tuiAgentStartInputSchema.extend({
   lastAgentState: tuiAgentStateSchema.optional(),
+  pullRequestMentions: z.array(tuiPullRequestMentionSchema).optional(),
   tmuxSessionName: z.string().optional(),
 });
 

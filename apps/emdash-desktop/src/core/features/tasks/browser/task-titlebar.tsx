@@ -55,6 +55,7 @@ import { ActivityBadge } from './components/activity-badge';
 import { AutomationRunPill } from './components/automation-run-pill';
 import { IssueSelector, ProviderLogo } from './components/issue-selector/issue-selector';
 import { PreviewServerPills } from './components/preview-servers/preview-server-pills';
+import { TaskPrPill } from './components/task-pr-pill/task-pr-pill';
 
 export const TaskTitlebar = observer(function TaskTitlebar() {
   const { projectId, taskId } = useTaskViewContext();
@@ -306,6 +307,7 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
               />
             </button>
           )}
+          <TaskPrPill taskStore={taskStore} />
           {taskPayload.automationRunId && (
             <AutomationRunPill taskStore={taskStore} isConverted={taskPayload.type === 'task'} />
           )}

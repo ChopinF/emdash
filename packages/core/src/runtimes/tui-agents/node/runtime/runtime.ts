@@ -65,6 +65,7 @@ import {
 import { createSessionLifecycle } from '#services/session-lifecycle/node';
 import { TuiAgentStates } from './agent-state';
 import { spillLargePrompt, type PromptSpillResult } from './prompt-spill';
+import { PullRequestMentionTracker } from './pull-request-mentions';
 import type { TuiAgentsRuntimeDeps, TuiSessionConfig } from './types';
 
 const RESUME_FALLBACK_WINDOW_MS = 3_000;
@@ -94,6 +95,7 @@ export class TuiAgentsRuntime {
   private readonly logs = new Map<string, RetainedOutput>();
   private readonly configs = new Map<string, TuiSessionConfig>();
   private readonly generations = new Map<string, number>();
+  private readonly pullRequestMentions = new Map<string, PullRequestMentionTracker>();
   readonly sessionsLiveModel: TuiSessionsLiveModel;
   readonly agentStatesLiveModel: TuiAgentStatesLiveModel;
   private readonly sessionsList: TuiSessionsListModel;
@@ -241,6 +243,12 @@ export class TuiAgentsRuntime {
           },
         },
         {
+          name: 'pull-request-mentions',
+          run: (key) => {
+            this.pullRequestMentions.delete(key);
+          },
+        },
+        {
           name: 'sessions-list-entry',
           run: (key) => {
             produceCell(this.sessionsList.states.list, (draft) => {
@@ -260,7 +268,12 @@ export class TuiAgentsRuntime {
           const sessionId = this.currentProviderSessionId(conversationId, config.input.sessionId);
           const lastAgentState = this.agentStates.current(conversationId);
           return {
-            payload: { ...persisted, sessionId, lastAgentState } as unknown as Serializable,
+            payload: {
+              ...persisted,
+              sessionId,
+              lastAgentState,
+              pullRequestMentions: this.pullRequestMentions.get(conversationId)?.list,
+            } as unknown as Serializable,
             sessionId,
           };
         },
@@ -284,6 +297,11 @@ export class TuiAgentsRuntime {
             if (!parsed.success) return { suspend: 'reconcile-failed' };
             if (parsed.data.lastAgentState) {
               this.agentStates.restore(parsed.data.lastAgentState);
+            }
+            if (parsed.data.pullRequestMentions) {
+              this.pullRequestMentionsFor(parsed.data.conversationId).restore(
+                parsed.data.pullRequestMentions
+              );
             }
             return { input: this.normalizePersistedInput(parsed.data) };
           },
@@ -604,8 +622,9 @@ export class TuiAgentsRuntime {
               session.output.reseed();
             }
           },
-          onData: () => {
+          onData: (chunk) => {
             this.lifecycle.recordOutput(config.input.conversationId);
+            this.scanForPullRequests(config.input.conversationId, chunk);
           },
           onExit: (info) => {
             if (!this.isCurrentGeneration(config.input.conversationId, generation)) return;
@@ -897,6 +916,8 @@ export class TuiAgentsRuntime {
   private syncSessionState(state: TuiSessionState): void {
     const activity = this.lifecycle.activity(state.conversationId);
     const next: TuiSessionState = { ...state };
+    const mentions = this.pullRequestMentions.get(state.conversationId)?.list;
+    if (mentions?.length) next.pullRequestMentions = [...mentions];
     if (activity.lastInputAt !== null) {
       next.lastInputAt = activity.lastInputAt;
     }
@@ -906,6 +927,25 @@ export class TuiAgentsRuntime {
     produceCell(this.sessionsList.states.list, (draft) => {
       draft[state.conversationId] = next;
     });
+  }
+
+  private pullRequestMentionsFor(conversationId: string): PullRequestMentionTracker {
+    let tracker = this.pullRequestMentions.get(conversationId);
+    if (!tracker) {
+      tracker = new PullRequestMentionTracker();
+      this.pullRequestMentions.set(conversationId, tracker);
+    }
+    return tracker;
+  }
+
+  private scanForPullRequests(conversationId: string, chunk: string): void {
+    const tracker = this.pullRequestMentionsFor(conversationId);
+    if (!tracker.push(chunk, this.clock.now())) return;
+    produceCell(this.sessionsList.states.list, (draft) => {
+      const current = draft[conversationId];
+      if (current) current.pullRequestMentions = [...tracker.list];
+    });
+    this.lifecycle.saveIntent(conversationId);
   }
 
   private syncSessionActivity(conversationId: string, activity: ActivityFields): void {
