@@ -1,6 +1,6 @@
 import type { SerializedHostRef } from '@emdash/core/primitives/host/api';
 import type { SessionSummary } from '@emdash/core/runtimes/acp/api/client';
-import type { TuiSessionList } from '@emdash/core/runtimes/tui-agents/api';
+import type { TuiPullRequestMention, TuiSessionList } from '@emdash/core/runtimes/tui-agents/api';
 import { createScope, type Disposable } from '@emdash/shared/concurrency';
 import { ReplicaLog } from '@emdash/wire/live';
 import { observe, remote } from '@emdash/wire/state';
@@ -62,6 +62,11 @@ export class ConversationManagerStore implements Disposable {
   sessions = observable.map<string, PtySession>();
   activeTuiSessionIds = observable.set<string>();
   activeAcpSessionIds = observable.set<string>();
+  /** Every conversation in the project, since the TUI session list isn't scoped to a task. */
+  private readonly tuiPullRequestMentions = observable.map<
+    string,
+    readonly TuiPullRequestMention[]
+  >([], { deep: false });
 
   constructor(
     private readonly projectId: string,
@@ -70,20 +75,22 @@ export class ConversationManagerStore implements Disposable {
     private readonly sessionHost: () => SerializedHostRef,
     readonly hostAccess?: ProjectHostAccess
   ) {
-    makeObservable<ConversationManagerStore, '_hasObservedAcpSessions' | '_hasObservedTuiSessions'>(
-      this,
-      {
-        conversations: observable,
-        sessions: observable,
-        activeTuiSessionIds: observable,
-        activeAcpSessionIds: observable,
-        _hasObservedTuiSessions: observable,
-        _hasObservedAcpSessions: observable,
-        activeSessionIds: computed,
-        taskStatus: computed,
-        runtimeObservation: computed,
-      }
-    );
+    makeObservable<
+      ConversationManagerStore,
+      '_hasObservedAcpSessions' | '_hasObservedTuiSessions' | 'tuiPullRequestMentions'
+    >(this, {
+      conversations: observable,
+      sessions: observable,
+      activeTuiSessionIds: observable,
+      activeAcpSessionIds: observable,
+      tuiPullRequestMentions: observable,
+      _hasObservedTuiSessions: observable,
+      _hasObservedAcpSessions: observable,
+      activeSessionIds: computed,
+      pullRequestMentions: computed,
+      taskStatus: computed,
+      runtimeObservation: computed,
+    });
 
     const hasPreloaded = preloaded !== undefined;
     this.list = new Resource<Conversation[]>(
@@ -244,9 +251,13 @@ export class ConversationManagerStore implements Disposable {
     runInAction(() => {
       this._hasObservedTuiSessions = true;
       this.activeTuiSessionIds.clear();
+      this.tuiPullRequestMentions.clear();
       for (const [conversationId, session] of Object.entries(list)) {
         if (session.status === 'starting' || session.status === 'running') {
           this.activeTuiSessionIds.add(conversationId);
+        }
+        if (session.pullRequestMentions?.length) {
+          this.tuiPullRequestMentions.set(conversationId, session.pullRequestMentions);
         }
       }
     });
@@ -345,6 +356,13 @@ export class ConversationManagerStore implements Disposable {
     if (hasUnseenError) return 'error';
     if (hasUnseenCompleted) return 'completed';
     return null;
+  }
+
+  /** Pull requests mentioned by this task's conversations. */
+  get pullRequestMentions(): readonly TuiPullRequestMention[] {
+    return [...this.conversations.keys()].flatMap(
+      (conversationId) => this.tuiPullRequestMentions.get(conversationId) ?? []
+    );
   }
 
   get activeSessionIds(): Set<string> {
