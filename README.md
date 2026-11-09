@@ -25,6 +25,10 @@ diffs, and merge what works.
 It works with local projects and remote machines over SSH. Bring the CLI agents you
 already use: Claude Code, Codex, OpenCode, Amp, and more.
 
+This fork is built to be ergonomic and keyboard-first, with inspiration from Neovim and
+Hyprland: hold a mod key and move between tasks, agents, and conversations without
+reaching for the mouse. See [Mainmod Keybindings](#mainmod-keybindings).
+
 <img alt="Emdash product screenshot" src="https://emdash.sh/media/blog/public-v1-beta/v1beta.jpg" />
 
 ## What You Can Do
